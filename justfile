@@ -1,0 +1,6 @@
+configure:
+    cmake -S . -B build/release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="{{justfile_directory()}}/dist"
+
+build: configure
+    cmake --build build/release --config Release
+    cmake --install build/release --config Release
