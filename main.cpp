@@ -8,6 +8,7 @@
 #include <QMainWindow>
 #include <QPushButton>
 #include <QShortcut>
+#include <QSoundEffect>
 #include <QStyle>
 #include <QSystemTrayIcon>
 #include <QTimer>
@@ -25,6 +26,8 @@ public:
 
         trayIcon_.setIcon(style()->standardIcon(QStyle::SP_MessageBoxInformation));
         trayIcon_.setToolTip("Timer");
+        alarmSound_.setSource(QUrl(QStringLiteral("qrc:/assets/sounds/timer-finished.wav")));
+        alarmSound_.setVolume(0.8f);
 
         auto *central = new QWidget(this);
         auto *layout = new QVBoxLayout(central);
@@ -254,6 +257,7 @@ private:
             timer_.stop();
             running_ = false;
             pausedMilliseconds_ = 0;
+            alarmSound_.play();
             if (QSystemTrayIcon::isSystemTrayAvailable() &&
                 QSystemTrayIcon::supportsMessages()) {
                 trayIcon_.show();
@@ -292,6 +296,7 @@ private:
     QPushButton *acceptButton_ = nullptr;
     QPushButton *cancelButton_ = nullptr;
     QSystemTrayIcon trayIcon_{this};
+    QSoundEffect alarmSound_;
     QTimer timer_;
     bool editing_ = false;
     bool running_ = false;

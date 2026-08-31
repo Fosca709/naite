@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>assets/sounds/timer-finished.wav</file>
+    </qresource>
+</RCC>
