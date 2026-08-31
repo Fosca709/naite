@@ -7,6 +7,7 @@
 #include <QLineEdit>
 #include <QMainWindow>
 #include <QPushButton>
+#include <QSettings>
 #include <QShortcut>
 #include <QSoundEffect>
 #include <QStyle>
@@ -98,8 +99,18 @@ public:
         connect(new QShortcut(QKeySequence(Qt::Key_Escape), this), &QShortcut::activated,
                 this, [this] { if (editing_) cancelEdit(); });
 
-        showDisplay(0);
+        bool validSavedValue = false;
+        const int savedSeconds = QSettings().value("timer/configuredSeconds", 0)
+                                     .toInt(&validSavedValue);
+        configuredSeconds_ = validSavedValue && savedSeconds >= 0 &&
+                                     savedSeconds <= maximumDurationSeconds()
+                                 ? savedSeconds
+                                 : 0;
+        remainingSeconds_ = configuredSeconds_;
+        showDisplay(remainingSeconds_);
         setEditMode(false);
+        playButton_->setEnabled(configuredSeconds_ > 0);
+        resetButton_->setEnabled(configuredSeconds_ > 0);
     }
 
 protected:
@@ -168,6 +179,11 @@ private:
         return fieldValue(hours_) * 3600 + fieldValue(minutes_) * 60 + fieldValue(seconds_);
     }
 
+    static constexpr int maximumDurationSeconds()
+    {
+        return 99 * 3600 + 59 * 60 + 59;
+    }
+
     void showDisplay(int totalSeconds)
     {
         totalSeconds = std::max(0, totalSeconds);
@@ -179,6 +195,7 @@ private:
     void acceptEdit()
     {
         configuredSeconds_ = displayedSeconds();
+        QSettings().setValue("timer/configuredSeconds", configuredSeconds_);
         remainingSeconds_ = configuredSeconds_;
         pausedMilliseconds_ = 0;
         setTimerAppearance(false, false);
@@ -309,6 +326,8 @@ private:
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    QCoreApplication::setOrganizationName("naite");
+    QCoreApplication::setApplicationName("naite");
     TimerWindow window;
     window.show();
     return app.exec();
