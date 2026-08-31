@@ -44,11 +44,18 @@ public:
         playButton_->setToolTip("Start timer");
         playButton_->setAccessibleName("Start timer");
         playButton_->setFixedSize(52, 42);
+        resetButton_ = new QPushButton(this);
+        resetButton_->setIcon(style()->standardIcon(QStyle::SP_BrowserReload));
+        resetButton_->setToolTip("Reset timer");
+        resetButton_->setAccessibleName("Reset timer");
+        resetButton_->setFixedSize(52, 42);
+        resetButton_->setEnabled(false);
         acceptButton_ = new QPushButton("Apply", this);
         acceptButton_->setIcon(style()->standardIcon(QStyle::SP_DialogApplyButton));
         cancelButton_ = new QPushButton("Cancel", this);
         cancelButton_->setIcon(style()->standardIcon(QStyle::SP_DialogCancelButton));
         buttonLayout->addWidget(playButton_);
+        buttonLayout->addWidget(resetButton_);
         buttonLayout->addWidget(acceptButton_);
         buttonLayout->addWidget(cancelButton_);
         buttonLayout->addStretch();
@@ -62,6 +69,7 @@ public:
                 selection-background-color: #3478f6; selection-color: #ffffff; }
             QLineEdit[editing="true"] { background: #f4f6fa; border-color: #3478f6; }
             QLineEdit[running="true"] { color: #1769e0; }
+            QLineEdit[paused="true"] { color: #d97706; }
             QLabel { color: #555b66; font-size: 43px; padding-bottom: 7px; }
             QPushButton { background: #e9ebef; color: #111111; border: none;
                 border-radius: 9px; padding: 9px 15px; font-size: 14px; }
@@ -70,7 +78,8 @@ public:
             QPushButton:disabled { color: #9a9da4; background: #f1f2f4; }
         )");
 
-        connect(playButton_, &QPushButton::clicked, this, [this] { startTimer(); });
+        connect(playButton_, &QPushButton::clicked, this, [this] { toggleTimer(); });
+        connect(resetButton_, &QPushButton::clicked, this, [this] { resetTimer(); });
         connect(acceptButton_, &QPushButton::clicked, this, [this] { acceptEdit(); });
         connect(cancelButton_, &QPushButton::clicked, this, [this] { cancelEdit(); });
         connect(&timer_, &QTimer::timeout, this, [this] { updateCountdown(); });
@@ -128,6 +137,7 @@ private:
             field->style()->polish(field);
         }
         playButton_->setVisible(!enabled);
+        resetButton_->setVisible(!enabled);
         acceptButton_->setVisible(enabled);
         cancelButton_->setVisible(enabled);
         if (!enabled) centralWidget()->setFocus();
@@ -155,9 +165,12 @@ private:
     {
         configuredSeconds_ = displayedSeconds();
         remainingSeconds_ = configuredSeconds_;
+        pausedMilliseconds_ = 0;
+        setTimerAppearance(false, false);
         showDisplay(remainingSeconds_);
         setEditMode(false);
         playButton_->setEnabled(remainingSeconds_ > 0);
+        resetButton_->setEnabled(configuredSeconds_ > 0);
     }
 
     void cancelEdit()
@@ -167,15 +180,57 @@ private:
         playButton_->setEnabled(remainingSeconds_ > 0);
     }
 
+    void toggleTimer()
+    {
+        if (running_) {
+            pauseTimer();
+        } else {
+            startTimer();
+        }
+    }
+
+    void resetTimer()
+    {
+        timer_.stop();
+        running_ = false;
+        pausedMilliseconds_ = 0;
+        remainingSeconds_ = configuredSeconds_;
+        showDisplay(remainingSeconds_);
+        setTimerAppearance(false, false);
+        playButton_->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+        playButton_->setToolTip("Start timer");
+        playButton_->setAccessibleName("Start timer");
+        playButton_->setEnabled(configuredSeconds_ > 0);
+    }
+
     void startTimer()
     {
-        remainingSeconds_ = displayedSeconds();
-        if (remainingSeconds_ <= 0) return;
+        if (pausedMilliseconds_ <= 0) {
+            remainingSeconds_ = displayedSeconds();
+            pausedMilliseconds_ = qint64(remainingSeconds_) * 1000;
+        }
+        if (pausedMilliseconds_ <= 0) return;
         running_ = true;
-        setRunningAppearance(true);
-        playButton_->setEnabled(false);
-        endTimeMs_ = QDateTime::currentMSecsSinceEpoch() + qint64(remainingSeconds_) * 1000;
+        setTimerAppearance(true, false);
+        playButton_->setIcon(style()->standardIcon(QStyle::SP_MediaPause));
+        playButton_->setToolTip("Pause timer");
+        playButton_->setAccessibleName("Pause timer");
+        endTimeMs_ = QDateTime::currentMSecsSinceEpoch() + pausedMilliseconds_;
         timer_.start();
+    }
+
+    void pauseTimer()
+    {
+        pausedMilliseconds_ = std::max<qint64>(0, endTimeMs_ - QDateTime::currentMSecsSinceEpoch());
+        remainingSeconds_ = pausedMilliseconds_ > 0 ? int((pausedMilliseconds_ + 999) / 1000) : 0;
+        timer_.stop();
+        running_ = false;
+        setTimerAppearance(false, true);
+        showDisplay(remainingSeconds_);
+        playButton_->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+        playButton_->setToolTip("Resume timer");
+        playButton_->setAccessibleName("Resume timer");
+        playButton_->setEnabled(pausedMilliseconds_ > 0);
     }
 
     void updateCountdown()
@@ -186,17 +241,22 @@ private:
         if (millisecondsLeft <= 0) {
             timer_.stop();
             running_ = false;
-            setRunningAppearance(false);
+            pausedMilliseconds_ = 0;
+            setTimerAppearance(false, false);
             remainingSeconds_ = configuredSeconds_;
             showDisplay(remainingSeconds_);
+            playButton_->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+            playButton_->setToolTip("Start timer");
+            playButton_->setAccessibleName("Start timer");
             playButton_->setEnabled(configuredSeconds_ > 0);
         }
     }
 
-    void setRunningAppearance(bool enabled)
+    void setTimerAppearance(bool running, bool paused)
     {
         for (auto *field : {hours_, minutes_, seconds_}) {
-            field->setProperty("running", enabled);
+            field->setProperty("running", running);
+            field->setProperty("paused", paused);
             field->style()->unpolish(field);
             field->style()->polish(field);
         }
@@ -206,6 +266,7 @@ private:
     QLineEdit *minutes_ = nullptr;
     QLineEdit *seconds_ = nullptr;
     QPushButton *playButton_ = nullptr;
+    QPushButton *resetButton_ = nullptr;
     QPushButton *acceptButton_ = nullptr;
     QPushButton *cancelButton_ = nullptr;
     QTimer timer_;
@@ -214,6 +275,7 @@ private:
     int configuredSeconds_ = 0;
     int remainingSeconds_ = 0;
     qint64 endTimeMs_ = 0;
+    qint64 pausedMilliseconds_ = 0;
 };
 
 int main(int argc, char *argv[])
