@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QCloseEvent>
 #include <QDateTime>
 #include <QHBoxLayout>
 #include <QIntValidator>
@@ -8,6 +9,7 @@
 #include <QPushButton>
 #include <QShortcut>
 #include <QStyle>
+#include <QSystemTrayIcon>
 #include <QTimer>
 #include <QVBoxLayout>
 
@@ -20,6 +22,10 @@ public:
     {
         setWindowTitle("Timer");
         setFixedSize(540, 260);
+
+        trayIcon_.setIcon(style()->standardIcon(QStyle::SP_MessageBoxInformation));
+        trayIcon_.setToolTip("Timer");
+
         auto *central = new QWidget(this);
         auto *layout = new QVBoxLayout(central);
         layout->setContentsMargins(48, 42, 48, 34);
@@ -94,6 +100,12 @@ public:
     }
 
 protected:
+    void closeEvent(QCloseEvent *event) override
+    {
+        trayIcon_.hide();
+        QMainWindow::closeEvent(event);
+    }
+
     bool eventFilter(QObject *watched, QEvent *event) override
     {
         if (!running_ && !editing_ && event->type() == QEvent::MouseButtonPress &&
@@ -242,6 +254,16 @@ private:
             timer_.stop();
             running_ = false;
             pausedMilliseconds_ = 0;
+            if (QSystemTrayIcon::isSystemTrayAvailable() &&
+                QSystemTrayIcon::supportsMessages()) {
+                trayIcon_.show();
+                trayIcon_.showMessage(
+                    "Timer finished",
+                    "Your countdown has ended.",
+                    QSystemTrayIcon::Information,
+                    10'000);
+                QTimer::singleShot(10'000, &trayIcon_, &QSystemTrayIcon::hide);
+            }
             setTimerAppearance(false, false);
             remainingSeconds_ = configuredSeconds_;
             showDisplay(remainingSeconds_);
@@ -269,6 +291,7 @@ private:
     QPushButton *resetButton_ = nullptr;
     QPushButton *acceptButton_ = nullptr;
     QPushButton *cancelButton_ = nullptr;
+    QSystemTrayIcon trayIcon_{this};
     QTimer timer_;
     bool editing_ = false;
     bool running_ = false;
