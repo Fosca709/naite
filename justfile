@@ -4,3 +4,7 @@ configure:
 build: configure
     cmake --build build/release --config Release
     cmake --install build/release --config Release
+
+package: configure
+    cmake --build build/release --config Release
+    cpack --config build/release/CPackConfig.cmake -G DEB -B build/packages

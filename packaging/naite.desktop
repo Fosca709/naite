@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Naite
+Comment=A simple timer application
+Exec=naite
+Icon=naite
+Terminal=false
+Categories=Utility;Clock;

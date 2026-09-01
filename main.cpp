@@ -329,6 +329,7 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     QCoreApplication::setOrganizationName("naite");
     QCoreApplication::setApplicationName("naite");
+    QGuiApplication::setDesktopFileName("naite");
     QIcon appIcon;
     appIcon.addFile(QStringLiteral(":/assets/icons/icon-16.png"), QSize(16, 16));
     appIcon.addFile(QStringLiteral(":/assets/icons/icon-32.png"), QSize(32, 32));
