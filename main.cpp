@@ -23,11 +23,11 @@ class TimerWindow final : public QMainWindow
 public:
     TimerWindow()
     {
-        setWindowTitle("Timer");
+        setWindowTitle("Naite");
         setFixedSize(540, 260);
 
         trayIcon_.setIcon(QApplication::windowIcon());
-        trayIcon_.setToolTip("Timer");
+        trayIcon_.setToolTip("Naite");
         alarmSound_.setSource(QUrl(QStringLiteral("qrc:/assets/sounds/timer-finished.wav")));
         alarmSound_.setVolume(0.8f);
 
