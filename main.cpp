@@ -2,6 +2,7 @@
 #include <QCloseEvent>
 #include <QDateTime>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QIntValidator>
 #include <QLabel>
 #include <QLineEdit>
@@ -25,7 +26,7 @@ public:
         setWindowTitle("Timer");
         setFixedSize(540, 260);
 
-        trayIcon_.setIcon(style()->standardIcon(QStyle::SP_MessageBoxInformation));
+        trayIcon_.setIcon(QApplication::windowIcon());
         trayIcon_.setToolTip("Timer");
         alarmSound_.setSource(QUrl(QStringLiteral("qrc:/assets/sounds/timer-finished.wav")));
         alarmSound_.setVolume(0.8f);
@@ -328,6 +329,11 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     QCoreApplication::setOrganizationName("naite");
     QCoreApplication::setApplicationName("naite");
+    QIcon appIcon;
+    appIcon.addFile(QStringLiteral(":/assets/icons/icon-16.png"), QSize(16, 16));
+    appIcon.addFile(QStringLiteral(":/assets/icons/icon-32.png"), QSize(32, 32));
+    appIcon.addFile(QStringLiteral(":/assets/icons/icon.svg"), QSize(512, 512));
+    app.setWindowIcon(appIcon);
     TimerWindow window;
     window.show();
     return app.exec();

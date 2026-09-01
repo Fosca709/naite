@@ -1,5 +1,8 @@
 <RCC>
     <qresource prefix="/">
+        <file>assets/icons/icon.svg</file>
+        <file>assets/icons/icon-32.png</file>
+        <file>assets/icons/icon-16.png</file>
         <file>assets/sounds/timer-finished.wav</file>
     </qresource>
 </RCC>
